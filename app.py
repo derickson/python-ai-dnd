@@ -1,14 +1,9 @@
-import pyttsx3
-import speech_recognition as sr
-import getch
 
-from langchain.llms import OpenAI
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
-from langchain.callbacks import get_openai_callback
-from langchain import PromptTemplate
+from lib_termutil import cprint
+import lib_strutil
+from dnd_party import Party, AICharacter
 
-from termcolor import colored
+from getch import getch
 
 art = """
 #############################################
@@ -22,84 +17,52 @@ art = """
 """
 
 VERBOSE = False
-PRINTMONEYCOUNTER = False
 AUTOVOICE = False  ## take voice input
 AUTOTEXT = True  ## take text input
 
-## color text printer
-def cprint(text, color):
-    print(colored(text, color))
 
-# Voice Recognition
-r = sr.Recognizer()
-def listen():
-    # Use the default microphone as the audio source
-    with sr.Microphone() as source:
-        print("Speak something...")
-        audio = r.listen(source)
-    try:
-        # for testing purposes, we're just using the default API key
-        # to use another API key, use `r.recognize_google(audio, key="GOOGLE_SPEECH_RECOGNITION_API_KEY")`
-        # instead of `r.recognize_google(audio)`
-        return r.recognize_google(audio)
-    except sr.UnknownValueError:
-        print("Google Speech Recognition could not understand audio")
-        return "UNKNOWN"
-    except sr.RequestError as e:
-        print("Could not request results from Google Speech Recognition service; {0}".format(e))
-        return "UNKNOWN"
+helga = AICharacter(
+    name="Helga",
+    knowledge="through years of play, you know negotiation is pointless and monsters must be slain. ",
+    inventory=["a sword"],
+    player_class="You are a warrior and can use items in your inventory but cannot cast spells. ",
+    goal_text="Your goal is to explore the dungeon and find the treasure. ",
+    text_color="red",
+    hp=12,
+    voice_name="Tessa",
+    voice_speed=200
+    )
 
+fizban = AICharacter(
+    name="Fizban",
+    knowledge="through years of play, you know clever play is the best way to win this game. ",
+    inventory=["a staff"],
+    player_class="You are a wizard and and can use items in your invetory and cast spells.",
+    goal_text="Your goal is to explore the dungeon and find the treasure. ",
+    hp=4,
+    voice_name="Reed (English (UK))",
+    voice_speed=190
+    )
 
-# Text to Voice Engine
-engine = pyttsx3.init()
+rocko = AICharacter(
+    name="Rocko",
+    knowledge="you throw caution to the wind and attack any enemy who dares cross your path. ",
+    inventory=["a dagger", "lockpicks"],
+    player_class="You are a swashbucker and can use items in your inventory but cannot cast spells. ",
+    goal_text="Your goal is to explore the dungeon and find the treasure. ",
+    text_color="yellow",
+    hp=12,
+    voice_name="Rocko (English (US))",
+    voice_speed=190
+    )
 
-
-llm = OpenAI(temperature=1)
-
-inventory = "a sword and a rope"
-templateAggressive="You are an aggressive player of a D&D game. "+\
-             "You are a warrior and can use items in your inventory but cannot cast spells. "+\
-             f"Your inventory starts with {inventory}. "+\
-             "Your goal is to explore the dungeon and find the treasure. \n"+\
-             "Current conversation:\n{history}\n Human:{input}\n"+\
-             "Tell me what your character tries to do next and wait to learn from me what happens. \n"+\
-             "AI: "
-prompt = PromptTemplate(
-    input_variables=["history","input"],
-    template=templateAggressive,
-)
-
-memory = ConversationBufferMemory(return_messages=True)
-conversation = ConversationChain(
-    llm=llm, 
-    verbose=VERBOSE, 
-    memory=ConversationBufferMemory(),
-    prompt=prompt
-)
-
-cumulative_tokens = 1
-def count_tokens(chain, query, tokens_so_far):
-    with get_openai_callback() as cb:
-        result = chain.run(query)
-        if VERBOSE or PRINTMONEYCOUNTER:
-            cprint(f'\ttokens so far: {tokens_so_far}',"white")
-            cprint(f'\tSpent a total of {cb.total_tokens} tokens',"white")
-            new_token_count  = tokens_so_far + cb.total_tokens
-            cprint(f'\tcumulative tokens: {new_token_count}',"white")
-            money = new_token_count * 0.015 / 1000.0
-            formatted_money = "${:,.2f}".format(money)
-            cprint(f'\t{formatted_money}',"white")
-    return result, cb.total_tokens
+party = Party([helga,rocko, fizban])
+party.initCharacters(VERBOSE)
 
 
+character = fizban
 
-# Define a function to speak text
-def speak(text):
-    print("The Response: ")
-    cprint(text, "blue")
-    engine.say(text)
-    engine.runAndWait()
-
+cumulative_tokens = 0
 
 
 #############################
@@ -107,51 +70,92 @@ def speak(text):
 #############################
 
 cprint(art,"red")
-speak("Hello and welcome to the AI Dungeon")
-speak("I am an AI warrior and you are the Game Master, Let's Play Dungeons and Dragons. What do I see?")
 
-instructions = "Enter an option (\n\t1 for text prompt, \n\t2 voice prompt): "
-while True:
-    if AUTOVOICE:
-        option = "2"
-    elif AUTOTEXT:
-        option = "1"
-    else:
-        print(instructions)
-        option = getch.getch()
+for character in party.characters:
+    character.speak(f"I have arrived at the AI dungeon.") 
 
+## First Character lays it out
+firstChar =  party.characters[0]
+start = "I am the player and you are the Game Master, "+\
+    lib_strutil.oxfordize(firstChar.othercharacters) + " and I are here to play Dungeons and Dragons taking turns. "+\
+    "What do I see?"
+firstChar.speak(start)
 
-    if option == "1":  ## take text input and send to AI
-        print("What to tell the AI?")
-        
-        user_input = input("Enter your text: ")
+menuoptions = "Move on to next character's turn? (y) (n) (i - inventory) (h - hp mods)"
+
+alive_counter = len(party.characters)
+
+while alive_counter > 0:
+    for character in party.characters:
+        if character.alive :
+            option = ""
+            while option == "n" or option == "":
+                option = ""
+                print(f"Describe situation to - {character.name}")
+                user_input = input("Enter your text: ")
+                commandforAI = character.catchUpPromptWithOtherPlayerBuffer(user_input)
+                if VERBOSE:
+                    print(f"You are telling the AI named {character.name}: ")
+                    cprint("\t"+commandforAI,"green")
+                player_action, new_tokens = character.ai_move(commandforAI, cumulative_tokens, VERBOSE)
+                cumulative_tokens += new_tokens
+                
+                character.speak(player_action)
+                
+                print(f"Tell the result to - {character.name}")
+                dm_result = input("Enter your text: ")
+                party.bufferOtherPlayersTurn(character.name, user_input,player_action, dm_result)
+
+                print(menuoptions)
+                while not (option == "y" or option == "n"):
+                    option = getch().lower()
+                    print(option)
+                    if option == "i":
+                        print("(a)dd or (r)emove inventory?)")
+                        while not (option == "a" or option == "r"):
+                            option = getch().lower()
+                            print(option)
+                            if option == "a":
+                                item = input("What to add to inventory: ")
+                                character.inventory.append(item)
+                                print(f"{character.name}'s inventory now has: {lib_strutil.oxfordize(character.inventory)}")
+                            elif option == "r":
+                                print(f"{character.name}'s inventory now has: {lib_strutil.oxfordize(character.inventory)}")
+                                remitem = input("What to remove?: ")
+                                try:
+                                    character.inventory.remove(remitem)
+                                except ValueError:
+                                    print("Element not found in the list")
+                        print(menuoptions)
+                        option = getch().lower()
+                        print(option)
+                    elif option == "h":
+                        print("(a)dd or (r)emove hit points?)")
+                        while not (option == "a" or option == "r"):
+                            option = getch().lower()
+                            print(option)
+                            if option == "a":
+                                heal = input("How many hp to add: ")
+                                try:
+                                    character.hp += int(heal)
+                                except ValueError:
+                                    print("Error occurred")
+                                print(f"{character.name}'s hp is now: {character.hp}")
+                            elif option == "r":
+                                print(f"{character.name}'s hp is now: {character.hp}")
+                                damage = input("How much damage=?: ")
+                                try:
+                                    character.hp -= int(damage)
+                                except ValueError:
+                                    print("Error occurred")
+                                print(f"{character.name}'s hp is now: {character.hp}")
+                        
+                        print(menuoptions)
+                        option = getch().lower()
+                        print(option)
+            if character.hp <= 0:
+                character.alive = False
+                alive_counter -= 1
+                print(f"{character.name} has died")
             
-        commandforAI = user_input
-        if VERBOSE:
-            print("You are telling the AI: ")
-            cprint("\t"+commandforAI,"green")
-        result, new_tokens = count_tokens(conversation, commandforAI, cumulative_tokens)
-        cumulative_tokens += new_tokens
-        # print(result)
-        speak(result)
-
-    elif option == "2":  ## voice input
-        takingInput = True
-        while takingInput:
-            print("What to tell the AI?")
-            user_input  = listen()
-            print("You typed: ", user_input)
-            send = getch.getch("send to AI? Y/N: ")
-            if send.lower() == "y":
-                takingInput = False
-        commandforAI = user_input
-        if VERBOSE:
-            print("You are telling the AI: ")
-            cprint("\t"+commandforAI,"green")
-        result, new_tokens = count_tokens(conversation, commandforAI, cumulative_tokens)
-        cumulative_tokens += new_tokens
-        # print(result)
-        speak(result)
-    else:
-        print("Invalid option. Please try again.")
-        continue
+            

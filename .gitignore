@@ -1,2 +1,4 @@
 env
 run.sh
+__pycache__
+*.mp3
