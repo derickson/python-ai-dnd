@@ -59,11 +59,8 @@ rocko = AICharacter(
 party = Party([helga,rocko, fizban])
 party.initCharacters(VERBOSE)
 
-
-character = fizban
-
+# a tracker for LLM tokens spent
 cumulative_tokens = 0
-
 
 #############################
 ### Start the game         ##
