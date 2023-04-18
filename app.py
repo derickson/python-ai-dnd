@@ -2,8 +2,10 @@
 from lib_termutil import cprint
 import lib_strutil
 from dnd_party import Party, AICharacter
+from lib_gameLoop import menuAndInput, endOfTurnOptions
 
-from getch import getch
+
+
 
 art = """
 #############################################
@@ -23,7 +25,7 @@ AUTOTEXT = True  ## take text input
 
 helga = AICharacter(
     name="Helga",
-    knowledge="through years of play, you know negotiation is pointless and monsters must be slain. ",
+    knowledge="you know negotiation is pointless and monsters must be slain. ",
     inventory=["a sword"],
     player_class="You are a warrior and can use items in your inventory but cannot cast spells. ",
     goal_text="Your goal is to explore the dungeon and find the treasure. ",
@@ -35,7 +37,7 @@ helga = AICharacter(
 
 fizban = AICharacter(
     name="Fizban",
-    knowledge="through years of play, you know clever play is the best way to win this game. ",
+    knowledge="you know clever play is the best way to win this game. ",
     inventory=["a staff"],
     player_class="You are a wizard and and can use items in your invetory and cast spells.",
     goal_text="Your goal is to explore the dungeon and find the treasure. ",
@@ -69,7 +71,7 @@ cumulative_tokens = 0
 cprint(art,"red")
 
 for character in party.characters:
-    character.speak(f"I have arrived at the AI dungeon.") 
+    character.speak(f"I have arrived at the A.I Dungeon.") 
 
 ## First Character lays it out
 firstChar =  party.characters[0]
@@ -78,11 +80,13 @@ start = "I am the player and you are the Game Master, "+\
     "What do I see?"
 firstChar.speak(start)
 
-menuoptions = "Move on to next character's turn? (y) (n) (i - inventory) (h - hp mods)"
-
+menuoptions = "Move on to next character's turn? \n(y)es, (n)o, (r)oll a d20, (i)nventory (h)p mods"
 alive_counter = len(party.characters)
+turn_counter = 0;
+
 
 while alive_counter > 0:
+    turn_counter += 1
     for character in party.characters:
         if character.alive :
             option = ""
@@ -99,60 +103,19 @@ while alive_counter > 0:
                 
                 character.speak(player_action)
                 
-                print(f"Tell the result to - {character.name}")
-                dm_result = input("Enter your text: ")
-                party.bufferOtherPlayersTurn(character.name, user_input,player_action, dm_result)
+                
+                # dm_result = input("Enter your text: ")
+                party.bufferOtherPlayersTurn(character.name, user_input,player_action)#, dm_result)
 
-                print(menuoptions)
-                while not (option == "y" or option == "n"):
-                    option = getch().lower()
-                    print(option)
-                    if option == "i":
-                        print("(a)dd or (r)emove inventory?)")
-                        while not (option == "a" or option == "r"):
-                            option = getch().lower()
-                            print(option)
-                            if option == "a":
-                                item = input("What to add to inventory: ")
-                                character.inventory.append(item)
-                                print(f"{character.name}'s inventory now has: {lib_strutil.oxfordize(character.inventory)}")
-                            elif option == "r":
-                                print(f"{character.name}'s inventory now has: {lib_strutil.oxfordize(character.inventory)}")
-                                remitem = input("What to remove?: ")
-                                try:
-                                    character.inventory.remove(remitem)
-                                except ValueError:
-                                    print("Element not found in the list")
-                        print(menuoptions)
-                        option = getch().lower()
-                        print(option)
-                    elif option == "h":
-                        print("(a)dd or (r)emove hit points?)")
-                        while not (option == "a" or option == "r"):
-                            option = getch().lower()
-                            print(option)
-                            if option == "a":
-                                heal = input("How many hp to add: ")
-                                try:
-                                    character.hp += int(heal)
-                                except ValueError:
-                                    print("Error occurred")
-                                print(f"{character.name}'s hp is now: {character.hp}")
-                            elif option == "r":
-                                print(f"{character.name}'s hp is now: {character.hp}")
-                                damage = input("How much damage=?: ")
-                                try:
-                                    character.hp -= int(damage)
-                                except ValueError:
-                                    print("Error occurred")
-                                print(f"{character.name}'s hp is now: {character.hp}")
-                        
-                        print(menuoptions)
-                        option = getch().lower()
-                        print(option)
+                print(f"As the GM, tell the result of {character.name}'s action after adjusting game state. You can narrate the result when speaking to the next character.")
+                option = endOfTurnOptions(option, character, menuoptions)
+            
+            ## potentially remove a character from the turn order if they have died
             if character.hp <= 0:
                 character.alive = False
                 alive_counter -= 1
                 print(f"{character.name} has died")
+
+cprint(f"All the characters have died and the adventure has ended. \nThank you for playing.\nTurns survived {turn_counter}","red")
             
             

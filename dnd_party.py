@@ -1,5 +1,5 @@
-from  lib_voice import Voice
-from lib_voice import GVoice
+# from  lib_voice import Voice
+# from lib_voice import GVoice
 from lib_voice import SVoice
 
 import lib_strutil
@@ -33,8 +33,11 @@ class Party():
                     character.othercharacters.append(othercharacter.name)
             character.initAI(verbose)
     
-    def bufferOtherPlayersTurn(self, playerName, dm_text, player_response, dm_result):
-        what_happened = f"Human: it's {playerName}'s turn, {dm_text}.\n{playerName}: {player_response}\nHuman:{dm_result}"
+    def bufferOtherPlayersTurn(self, playerName, dm_text, player_response, dm_result=None):
+        if dm_result:
+            what_happened = f"Human: it's {playerName}'s turn, {dm_text}.\n{playerName}: {player_response}\nHuman:{dm_result}"
+        else:
+            what_happened = f"Human: it's {playerName}'s turn, {dm_text}.\n{playerName}: {player_response}"
         for character in self.characters:
             if playerName != character.name:
                 character.otherPlayerTurnBuffer.append(what_happened)
@@ -93,6 +96,7 @@ class AICharacter():
         self.conversation.memory.ai_prefix=self.name
     
     def ai_move(self, new_human_info_since_last_move, tokens_so_far, verbose=False):
+        # regenerate the prompt template as items and hp may have changed
         self.conversation.prompt.template = self.genTemplate()
         with get_openai_callback() as cb:
             result = self.conversation.run(new_human_info_since_last_move)
