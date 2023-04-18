@@ -17,7 +17,17 @@ voice_male = SVoice(name="Fred")
 
 conversation_memory_interaction_length = 2
 
-PRINTMONEYCOUNTER = True
+
+PRINTMONEYCOUNTER = False
+
+def generateAI():
+    return OpenAI(temperature=1)
+
+def tokenToMoneyPrint(new_token_count, textcolor="white"):
+    cprint(f'\tCumulative tokens spent: {new_token_count}',textcolor)
+    money = new_token_count * 0.015 / 1000.0
+    formatted_money = "${:,.2f}".format(money)
+    cprint(f'\tThis session so far: {formatted_money}',textcolor)
 
 class Party():
     def __init__(self, characters=[]):
@@ -44,11 +54,12 @@ class Party():
 
 
 class AICharacter():
-    def __init__(self, name, knowledge, inventory, player_class, goal_text, voice_name="Fred", text_color="blue", hp=6, voice_speed=200):
+    def __init__(self, name, knowledge, inventory, class_name,class_abilities, goal_text, voice_name="Fred", text_color="blue", hp=6, voice_speed=200):
         self.name = name
         self.knowledge = knowledge
         self.inventory = inventory
-        self.player_class = player_class
+        self.class_name = class_name
+        self.class_abilities = class_abilities
         self.goal_text = goal_text
         self.voice = SVoice(name=voice_name,rate=voice_speed)
         self.text_color = text_color
@@ -69,7 +80,7 @@ class AICharacter():
     def genTemplate(self):
         return f"You are {self.name}. You are a player of a D&D game and are in a dungeon. "+\
                     self.knowledge+\
-                    self.player_class+\
+                    f'You are a {self.class_name} and {self.class_abilities}'+\
                     f"{self.goal_text}\n"+\
                     f"Your inventory contains {lib_strutil.oxfordize(self.inventory)} and you have {str(self.hp)} hit points left. "+\
                     "Recent conversation:\n{history}\n Human:{input}\n"+\
@@ -77,7 +88,7 @@ class AICharacter():
                     self.name+": "
 
     def initAI(self, verbose=False):
-        llm = OpenAI(temperature=1)
+        llm = generateAI()
         templateCharacter=self.genTemplate()
         self.prompt = PromptTemplate(
             input_variables=["history","input"],
@@ -104,10 +115,7 @@ class AICharacter():
                 textcolor = "white"
                 cprint(f'\tThis interaction spent {cb.total_tokens} tokens',textcolor)
                 new_token_count  = tokens_so_far + cb.total_tokens
-                cprint(f'\tCumulative tokens spent: {new_token_count}',textcolor)
-                money = new_token_count * 0.015 / 1000.0
-                formatted_money = "${:,.2f}".format(money)
-                cprint(f'\tThis session so far: {formatted_money}',textcolor)
+                tokenToMoneyPrint(new_token_count, textcolor)
         return result, cb.total_tokens
 
     def catchUpPromptWithOtherPlayerBuffer(self, user_input):
