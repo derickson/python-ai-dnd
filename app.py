@@ -4,7 +4,8 @@ import lib_strutil
 from dnd_party import Party, AICharacter, tokenToMoneyPrint
 from lib_gameLoop import menuAndInput, endOfTurnOptions
 
-
+import signal
+import sys
 
 
 art = """
@@ -21,6 +22,26 @@ art = """
 """
 
 VERBOSE = False ## control flag for lots of text debug
+
+
+turn_counter = 0;
+# a tracker for LLM tokens spent
+cumulative_tokens = 0
+
+def printEnd(round, tokens):
+    cprint(f"Thank you for playing.","red")
+    cprint(f"Turns survived {turn_counter}","red")
+    tokenToMoneyPrint(cumulative_tokens)
+
+def signal_handler(sig, frame):
+    """
+    Signal handler function to catch CTRL-C and print a message before exiting
+    """
+    cprint(f"You have decided to exit the dungeon","white")
+    printEnd(turn_counter, cumulative_tokens)
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 helga = AICharacter(
     name="Helga",
@@ -63,8 +84,7 @@ rocko = AICharacter(
 party = Party([helga,rocko, fizban])
 party.initCharacters(VERBOSE)
 
-# a tracker for LLM tokens spent
-cumulative_tokens = 0
+
 
 #############################
 ### Start the game         ##
@@ -90,7 +110,12 @@ firstChar.speak(start)
 
 menuoptions = "Move on to next character's turn? \n(y)es, (n)o, (r)oll a d20, (i)nventory (h)p mods"
 alive_counter = len(party.characters)
-turn_counter = 0;
+
+
+
+
+
+
 
 
 while alive_counter > 0:  # exit if all the adventurers die
@@ -123,7 +148,4 @@ while alive_counter > 0:  # exit if all the adventurers die
                 print(f"{character.name} has died")
 
 cprint(f"All the characters have died and the adventure has ended.","red")
-cprint(f"Thank you for playing.","red")
-cprint(f"Turns survived {turn_counter}","red")
-tokenToMoneyPrint(cumulative_tokens)
-            
+printEnd(turn_counter, cumulative_tokens)
