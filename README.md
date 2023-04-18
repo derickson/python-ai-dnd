@@ -35,4 +35,5 @@ The game doesn't have a natural ending, so ctrl-c to get out.
 
 ## Releases and Progress
 
+v2 - 2023-04-17 - Multiple NPCs play with a human GM, lots of cleanup
 v1 - 2023-04-16 - AI NPC plays D&D with a human GM in search of treasure. The AI NPC is a warrior.
