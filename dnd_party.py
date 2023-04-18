@@ -13,6 +13,8 @@ from langchain import PromptTemplate
 
 from lib_termutil import cprint
 
+import lib_local_llm
+
 voice_male = SVoice(name="Fred")
 
 conversation_memory_interaction_length = 2
@@ -21,7 +23,8 @@ conversation_memory_interaction_length = 2
 PRINTMONEYCOUNTER = False
 
 def generateAI():
-    return OpenAI(temperature=1)
+    return lib_local_llm.LocalLLM()
+    # return OpenAI(temperature=1)
 
 def tokenToMoneyPrint(new_token_count, textcolor="white"):
     cprint(f'\tCumulative tokens spent: {new_token_count}',textcolor)
