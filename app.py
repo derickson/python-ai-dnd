@@ -85,10 +85,10 @@ alive_counter = len(party.characters)
 turn_counter = 0;
 
 
-while alive_counter > 0:
+while alive_counter > 0:  # exit if all the adventurers die
     turn_counter += 1
-    for character in party.characters:
-        if character.alive :
+    for character in party.characters: 
+        if character.alive : # loop through the living characters
             option = ""
             while option == "n" or option == "":
                 option = ""
@@ -103,9 +103,7 @@ while alive_counter > 0:
                 
                 character.speak(player_action)
                 
-                
-                # dm_result = input("Enter your text: ")
-                party.bufferOtherPlayersTurn(character.name, user_input,player_action)#, dm_result)
+                party.bufferOtherPlayersTurn(character.name, user_input,player_action)
 
                 print(f"As the GM, tell the result of {character.name}'s action after adjusting game state. You can narrate the result when speaking to the next character.")
                 option = endOfTurnOptions(option, character, menuoptions)

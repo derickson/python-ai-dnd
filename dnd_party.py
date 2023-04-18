@@ -102,13 +102,12 @@ class AICharacter():
             result = self.conversation.run(new_human_info_since_last_move)
             if verbose or PRINTMONEYCOUNTER:
                 textcolor = "white"
-                cprint(f'\ttokens so far: {tokens_so_far}',textcolor)
-                cprint(f'\tSpent a total of {cb.total_tokens} tokens',textcolor)
+                cprint(f'\tThis interaction spent {cb.total_tokens} tokens',textcolor)
                 new_token_count  = tokens_so_far + cb.total_tokens
-                cprint(f'\tcumulative tokens: {new_token_count}',textcolor)
+                cprint(f'\tCumulative tokens spent: {new_token_count}',textcolor)
                 money = new_token_count * 0.015 / 1000.0
                 formatted_money = "${:,.2f}".format(money)
-                cprint(f'\t{formatted_money}',textcolor)
+                cprint(f'\tThis session so far: {formatted_money}',textcolor)
         return result, cb.total_tokens
 
     def catchUpPromptWithOtherPlayerBuffer(self, user_input):
