@@ -1,7 +1,7 @@
 
 from lib_termutil import cprint
 import lib_strutil
-from dnd_party import Party, AICharacter, tokenToMoneyPrint
+from dnd_party import Party, AICharacter, HumanGM, AIGM, tokenToMoneyPrint
 from lib_gameLoop import menuAndInput, endOfTurnOptions
 
 import signal
@@ -84,7 +84,7 @@ rocko = AICharacter(
 party = Party([helga,rocko, fizban])
 party.initCharacters(VERBOSE)
 
-
+gm = AIGM(party,VERBOSE)
 
 #############################
 ### Start the game         ##
@@ -92,30 +92,11 @@ party.initCharacters(VERBOSE)
 
 cprint(art,"red")
 
-for character in party.characters:
-    character.speak(f"I have arrived at the A.I Dungeon.")
-    cprint( f"\t Inventory: {lib_strutil.oxfordize(character.inventory)}","white")
-    cprint( f"\t Hit Points: {character.hp}","white")
+gm.intro_the_party()
 
-## First Character lays it out
-firstChar =  party.characters[0]
-if(len(party.characters) > 1):
-    start = "We are the players and you are the Game Master, "+\
-        lib_strutil.oxfordize(firstChar.othercharacters) + " and I are here to play Dungeons and Dragons taking turns. "+\
-        "I go first, what do I see?"
-else:
-        start = "I am here to play Dungeons and Dragons."+\
-        "What do I see?"
-firstChar.speak(start)
 
 menuoptions = "Move on to next character's turn? \n(y)es, (n)o, (r)oll a d20, (i)nventory (h)p mods"
 alive_counter = len(party.characters)
-
-
-
-
-
-
 
 
 while alive_counter > 0:  # exit if all the adventurers die
@@ -125,8 +106,12 @@ while alive_counter > 0:  # exit if all the adventurers die
             option = ""
             while option == "n" or option == "":
                 option = ""
-                print(f"Describe situation to - {character.name}")
-                user_input = input("Enter your text: ")
+                
+                # print(f"Describe situation to - {character.name}")
+                # user_input = input("Enter your text: ")
+                user_input, new_tokens = gm.gm_prompts_ai(character, VERBOSE)
+                cumulative_tokens + new_tokens
+
                 commandforAI = character.catchUpPromptWithOtherPlayerBuffer(user_input)
                 if VERBOSE:
                     print(f"You are telling the AI named {character.name}: ")
@@ -134,12 +119,13 @@ while alive_counter > 0:  # exit if all the adventurers die
                 player_action, new_tokens = character.ai_move(commandforAI, cumulative_tokens, VERBOSE)
                 cumulative_tokens += new_tokens
                 
+                gm.gm_listens_to_player_action(character, player_action)
                 character.speak(player_action)
                 
                 party.bufferOtherPlayersTurn(character.name, user_input,player_action)
 
                 print(f"As the GM, tell the result of {character.name}'s action after adjusting game state. You can narrate the result when speaking to the next character.")
-                option = endOfTurnOptions(option, character, menuoptions)
+                option = "y"# endOfTurnOptions(option, character, menuoptions)
             
             ## potentially remove a character from the turn order if they have died
             if character.hp <= 0:

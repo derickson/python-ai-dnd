@@ -1,6 +1,7 @@
 # from  lib_voice import Voice
 # from lib_voice import GVoice
 from lib_voice import SVoice
+from lib_dice import roll_d20
 
 import lib_strutil
 
@@ -52,6 +53,107 @@ class Party():
             if playerName != character.name:
                 character.otherPlayerTurnBuffer.append(what_happened)
 
+
+class GameMaster():
+    def __init__(self, party):
+        self.party = party
+
+    def intro_the_party(self):
+        for character in self.party.characters:
+            character.speak(f"I have arrived at the A.I Dungeon.")
+            cprint( f"\t Inventory: {lib_strutil.oxfordize(character.inventory)}","white")
+            cprint( f"\t Hit Points: {character.hp}","white")
+
+        ## First Character lays it out
+        firstChar =  self.party.characters[0]
+        if(len(self.party.characters) > 1):
+            start = "We are the players and you are the Game Master, "+\
+                lib_strutil.oxfordize(firstChar.othercharacters) + " and I are here to play Dungeons and Dragons taking turns. "+\
+                "I go first, what do I see?"
+        else:
+                start = "I am here to play Dungeons and Dragons."+\
+                "What do I see?"
+        self.gm_listens_to_player_action(firstChar, start)
+        firstChar.speak(start)
+
+    def gm_prompts_ai(self, character_to_prompt, verbose=False):
+        pass
+
+    def gm_listens_to_player_action(self, character, player_action):
+        pass
+
+class HumanGM(GameMaster):
+    def gm_prompts_ai(self, character_to_prompt, tokens_so_far, verbose=False):
+        print(f"Describe situation to - {character_to_prompt.name}")
+        user_input = input("Enter your text: ")
+        new_tokens = 0
+        return user_input, new_tokens
+
+class AIGM(GameMaster):
+    def __init__(self, party, verbose=False):
+        super().__init__(party)
+        self.lastCharacterName = None
+        self.lastCharacterPrompt = None
+        self.voice = SVoice(name="Grandpa (English (UK))",rate=180)
+        self.text_color = "green"
+        self.name = "the G.M"
+        self.initAI(verbose)
+    
+    def gm_listens_to_player_action(self, character, player_action):
+        self.lastCharacterName = character.name
+        self.lastCharacterPrompt = player_action
+    
+    def gm_prompts_ai(self, character_to_prompt, tokens_so_far, verbose=False):
+        print("GM:")
+        response, new_tokens = self.ai_move(tokens_so_far, verbose)
+        cprint(f"\t{response}",self.text_color)
+        self.speak(response)
+        return response, new_tokens
+    
+    def speak(self, text):
+        self.voice.say(f"This is {self.name}. {text}")
+
+    def genTemplate(self, character_name, success=True):
+        result = "is successful in their attempt" if success else "is unsuccessful and has negative consequences"
+        return f"You are {self.name}. You are the Dungeon Master of a D&D game. "+\
+                    "You are having a conversation with adventureres exploring a dungeon with many rooms, traps, monsters. There is a treasure chest in this dungeon to be discovered. "+\
+                    "Recent conversation:\n{history}\n "+character_name+":{input}\n"+\
+                    f"{character_name} {result}. Give a brief narrative description of the results of what {character_name} is attmpting to do, and then give  a brief description the surroundings and threats to the next player. \n"+\
+                    self.name+": "
+
+    def initAI(self, verbose=False):
+        llm = generateAI()
+        templateGM="This is just temporary {history} {input}"
+        self.prompt = PromptTemplate(
+            input_variables=["history","input"],
+            template=templateGM,
+        )
+
+        gmMemory = conversation_memory_interaction_length * len(self.party.characters)
+        self.memory = ConversationBufferWindowMemory( k=gmMemory )
+        self.conversation = ConversationChain(
+            llm=llm, 
+            verbose=verbose, 
+            memory=self.memory,
+            prompt=self.prompt
+        )
+        self.conversation.memory.ai_prefix=self.name
+
+    def ai_move(self, tokens_so_far, verbose):
+        # regenerate the prompt template as items and hp may have changed
+
+        r20 = roll_d20()
+        success = r20 > 10
+        cprint(f'\tA d20 is rolled. The result is: {r20}',"white")
+        self.conversation.prompt.template = self.genTemplate(self.lastCharacterName,success)
+        with get_openai_callback() as cb:
+            result = self.conversation.run(self.lastCharacterPrompt)
+            if verbose or PRINTMONEYCOUNTER:
+                textcolor = "white"
+                cprint(f'\tThis interaction spent {cb.total_tokens} tokens',textcolor)
+                new_token_count  = tokens_so_far + cb.total_tokens
+                tokenToMoneyPrint(new_token_count, textcolor)
+        return result, cb.total_tokens
 
 class AICharacter():
     def __init__(self, name, knowledge, inventory, class_name,class_abilities, goal_text, voice_name="Fred", text_color="blue", hp=6, voice_speed=200):
