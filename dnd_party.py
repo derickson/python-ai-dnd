@@ -120,7 +120,7 @@ class AIGM(GameMaster):
         return f"You are {self.name}. You are the Dungeon Master of a D&D game. "+\
                     "You are having a conversation with adventureres exploring a dungeon with many rooms, traps, monsters."+\
                     "Recent conversation:\n{history}\n "+character_name+":{input}\n"+\
-                    f"{character_name} {result}. Give a brief narrative description of the results of what {character_name} is attmpting to do \n"+\
+                    f"{character_name} {result}. Give a very short narrative description of the results of what {character_name} is attmpting to do \n"+\
                     self.name+": "
         
 
