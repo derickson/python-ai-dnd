@@ -55,7 +55,7 @@ class Party():
 
 
 class GameMaster():
-    def __init__(self, party):
+    def __init__(self, party, verbose=False):
         self.party = party
 
     def intro_the_party(self):
@@ -91,7 +91,7 @@ class HumanGM(GameMaster):
 
 class AIGM(GameMaster):
     def __init__(self, party, verbose=False):
-        super().__init__(party)
+        super().__init__(party, verbose)
         self.lastCharacterName = None
         self.lastCharacterPrompt = None
         self.voice = SVoice(name="Grandpa (English (UK))",rate=180)
@@ -114,12 +114,15 @@ class AIGM(GameMaster):
         self.voice.say(f"This is {self.name}. {text}")
 
     def genTemplate(self, character_name, success=True):
+        #" There is a treasure chest in this dungeon to be discovered. "+\
+        #, and then give  a brief description the surroundings and threats to the next player.
         result = "is successful in their attempt" if success else "is unsuccessful and has negative consequences"
         return f"You are {self.name}. You are the Dungeon Master of a D&D game. "+\
-                    "You are having a conversation with adventureres exploring a dungeon with many rooms, traps, monsters. There is a treasure chest in this dungeon to be discovered. "+\
+                    "You are having a conversation with adventureres exploring a dungeon with many rooms, traps, monsters."+\
                     "Recent conversation:\n{history}\n "+character_name+":{input}\n"+\
-                    f"{character_name} {result}. Give a brief narrative description of the results of what {character_name} is attmpting to do, and then give  a brief description the surroundings and threats to the next player. \n"+\
+                    f"{character_name} {result}. Give a brief narrative description of the results of what {character_name} is attmpting to do \n"+\
                     self.name+": "
+        
 
     def initAI(self, verbose=False):
         llm = generateAI()
