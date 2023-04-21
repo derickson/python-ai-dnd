@@ -1,4 +1,5 @@
 env
 run.sh
+run.bat
 __pycache__
 *.mp3

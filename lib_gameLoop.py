@@ -1,5 +1,5 @@
 from lib_dice import roll_d20
-from getch import getch
+from lib_safe_getch import getch
 import lib_strutil
 from lib_termutil import cprint
 

@@ -63,6 +63,7 @@ fizban = AICharacter(
     class_name="wizard",
     class_abilities="and can use items in your invetory and cast many spells but not healing or resurrection spells",
     goal_text="Your goal is to explore the dungeon and find the treasure. ",
+    text_color="blue",
     hp=4,
     voice_name="Reed (English (UK))",
     voice_speed=190
