@@ -1,6 +1,17 @@
 import platform
 
-if platform.system() == 'Linux':
+if platform.system() == 'Windows':
+    import msvcrt
+    
+    def getch():
+        """
+        Read a single character of input from the console on Windows.
+        """
+        char = msvcrt.getch()
+        return char.decode('utf-8')
+    
+else:
+
     import sys
     import tty
     import termios
@@ -17,13 +28,3 @@ if platform.system() == 'Linux':
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return char
-    
-else:
-    import msvcrt
-    
-    def getch():
-        """
-        Read a single character of input from the console on Windows.
-        """
-        char = msvcrt.getch()
-        return char.decode('utf-8')
