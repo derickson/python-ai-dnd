@@ -84,7 +84,8 @@ rocko = AICharacter(
 party = Party([helga,rocko, fizban])
 party.initCharacters(VERBOSE)
 
-gm = AIGM(party,VERBOSE)
+# gm = AIGM(party,VERBOSE)
+gm = HumanGM(party, VERBOSE)
 
 #############################
 ### Start the game         ##
@@ -125,7 +126,7 @@ while alive_counter > 0:  # exit if all the adventurers die
                 party.bufferOtherPlayersTurn(character.name, user_input,player_action)
 
                 print(f"As the GM, tell the result of {character.name}'s action after adjusting game state. You can narrate the result when speaking to the next character.")
-                option = "y"# endOfTurnOptions(option, character, menuoptions)
+                option =  endOfTurnOptions(option, character, menuoptions)
             
             ## potentially remove a character from the turn order if they have died
             if character.hp <= 0:
